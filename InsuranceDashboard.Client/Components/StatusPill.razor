@@ -1,0 +1,14 @@
+<span class="status-pill @CssClass">@Text</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    private string CssClass => Text.ToLowerInvariant() switch
+    {
+        "active" or "open" => "status-good",
+        "investigating" => "status-warn",
+        "inactive" or "closed" => "status-muted",
+        _ => "status-neutral"
+    };
+}

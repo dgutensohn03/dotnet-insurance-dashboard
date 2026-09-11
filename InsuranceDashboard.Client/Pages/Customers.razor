@@ -1,0 +1,46 @@
+@page "/customers"
+@inject IInsuranceDataService DataService
+
+<PageTitle>Customers</PageTitle>
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">Customer view</div>
+        <h1>Customers</h1>
+        <p>A simple async-loaded list using shared C# records.</p>
+    </div>
+</div>
+
+@if (customers is null)
+{
+    <div class="panel">Loading customers…</div>
+}
+else
+{
+    <div class="customer-grid">
+        @foreach (var customer in customers)
+        {
+            <article class="panel customer-card">
+                <div class="avatar">@customer.Name[..1]</div>
+                <div>
+                    <h2>@customer.Name</h2>
+                    <p>@customer.Email</p>
+                </div>
+                <div class="customer-stats">
+                    <span>@customer.State</span>
+                    <span>@customer.PolicyCount policy</span>
+                    <span>@customer.TotalPremium.ToString("C0") premium</span>
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<Customer>? customers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        customers = await DataService.GetCustomersAsync();
+    }
+}

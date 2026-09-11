@@ -1,0 +1,21 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <aside class="sidebar">
+        <NavMenu />
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <div class="eyebrow">Learning project</div>
+                <div class="topbar-title">Insurance Operations</div>
+            </div>
+            <div class="mode-badge">Blazor + .NET</div>
+        </header>
+
+        <section class="page-content">
+            @Body
+        </section>
+    </main>
+</div>

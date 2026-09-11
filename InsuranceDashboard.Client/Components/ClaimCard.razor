@@ -1,0 +1,28 @@
+<article class="claim-card @(Selected ? "selected" : null)">
+    <div>
+        <div class="eyebrow">@Claim.PolicyNumber</div>
+        <h3>@Claim.ClaimNumber</h3>
+    </div>
+
+    <StatusPill Text="@Claim.Status" />
+
+    <div class="claim-meta">
+        <span>@Claim.Amount.ToString("C0")</span>
+        <span>@Claim.LossDate.ToString("MMM d, yyyy")</span>
+    </div>
+
+    <button class="button-secondary" @onclick="HandleSelect">Select claim</button>
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public Claim Claim { get; set; } = default!;
+
+    [Parameter]
+    public bool Selected { get; set; }
+
+    [Parameter]
+    public EventCallback<Claim> OnSelected { get; set; }
+
+    private Task HandleSelect() => OnSelected.InvokeAsync(Claim);
+}
