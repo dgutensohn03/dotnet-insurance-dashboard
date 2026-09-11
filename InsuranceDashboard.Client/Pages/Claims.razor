@@ -1,0 +1,140 @@
+@page "/claims"
+@inject IInsuranceDataService DataService
+
+<PageTitle>Claims</PageTitle>
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">Claims operations</div>
+        <h1>Claims</h1>
+        <p>Blazor components, parameters, callbacks, forms, validation, and async service calls all meet here.</p>
+    </div>
+</div>
+
+<div class="claims-layout">
+    <section>
+        @if (claims is null)
+        {
+            <div class="panel">Loading claims…</div>
+        }
+        else
+        {
+            <div class="claim-grid">
+                @foreach (var claim in claims)
+                {
+                    <ClaimCard Claim="@claim"
+                               Selected="@(selectedClaim?.Id == claim.Id)"
+                               OnSelected="HandleClaimSelected" />
+                }
+            </div>
+        }
+    </section>
+
+    <aside>
+        <div class="panel sticky">
+            @if (selectedClaim is null)
+            {
+                <div class="empty-state">
+                    <div class="eyebrow">Component events</div>
+                    <h2>Select a claim</h2>
+                    <p>The child component will invoke <code>EventCallback&lt;Claim&gt;</code> and this parent will update its state.</p>
+                </div>
+            }
+            else
+            {
+                <div class="eyebrow">Selected claim</div>
+                <h2>@selectedClaim.ClaimNumber</h2>
+                <dl class="detail-list">
+                    <div><dt>Policy</dt><dd>@selectedClaim.PolicyNumber</dd></div>
+                    <div><dt>Status</dt><dd>@selectedClaim.Status</dd></div>
+                    <div><dt>Amount</dt><dd>@selectedClaim.Amount.ToString("C")</dd></div>
+                    <div><dt>Loss date</dt><dd>@selectedClaim.LossDate</dd></div>
+                </dl>
+            }
+        </div>
+    </aside>
+</div>
+
+<section class="panel form-panel">
+    <div class="panel-heading">
+        <div>
+            <div class="eyebrow">Blazor forms</div>
+            <h2>Create a claim</h2>
+        </div>
+        <span class="code-hint">EditForm + DataAnnotations</span>
+    </div>
+
+    <EditForm Model="@newClaim" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-grid">
+            <label>
+                Claim number
+                <InputText @bind-Value="newClaim.ClaimNumber" />
+            </label>
+            <label>
+                Policy number
+                <InputText @bind-Value="newClaim.PolicyNumber" />
+            </label>
+            <label>
+                Status
+                <InputSelect @bind-Value="newClaim.Status">
+                    <option>Open</option>
+                    <option>Investigating</option>
+                    <option>Closed</option>
+                </InputSelect>
+            </label>
+            <label>
+                Amount
+                <InputNumber @bind-Value="newClaim.Amount" />
+            </label>
+        </div>
+
+        <button class="button-primary" type="submit" disabled="@saving">
+            @(saving ? "Saving…" : "Create claim")
+        </button>
+    </EditForm>
+</section>
+
+@code {
+    private IReadOnlyList<Claim>? claims;
+    private Claim? selectedClaim;
+    private Claim newClaim = CreateBlankClaim();
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        claims = await DataService.GetClaimsAsync();
+    }
+
+    private void HandleClaimSelected(Claim claim)
+    {
+        selectedClaim = claim;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        saving = true;
+
+        try
+        {
+            await DataService.AddClaimAsync(newClaim);
+            claims = await DataService.GetClaimsAsync();
+            newClaim = CreateBlankClaim();
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private static Claim CreateBlankClaim() => new()
+    {
+        ClaimNumber = $"CLM-{Random.Shared.Next(9100, 9999)}",
+        PolicyNumber = "AUTO-1001",
+        Status = "Open",
+        Amount = 0,
+        LossDate = DateOnly.FromDateTime(DateTime.Today)
+    };
+}

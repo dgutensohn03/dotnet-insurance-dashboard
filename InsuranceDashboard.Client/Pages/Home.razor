@@ -1,0 +1,104 @@
+@page "/"
+@inject IInsuranceDataService DataService
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">Operations overview</div>
+        <h1>Insurance Dashboard</h1>
+        <p>One project for learning Blazor, C#, APIs, LINQ, dependency injection, and async data flows.</p>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="panel">Loading dashboard…</div>
+}
+else if (error is not null)
+{
+    <div class="error-panel">@error</div>
+}
+else if (summary is not null)
+{
+    <div class="metric-grid">
+        <MetricCard Label="Active policies" Value="@summary.ActivePolicies.ToString()" Detail="LINQ Count()" />
+        <MetricCard Label="Open claims" Value="@summary.OpenClaims.ToString()" Detail="Filtered by status" />
+        <MetricCard Label="Written premium" Value="@summary.WrittenPremium.ToString("C0")" Detail="LINQ Sum()" />
+        <MetricCard Label="Open exposure" Value="@summary.OpenClaimExposure.ToString("C0")" Detail="Async service call" />
+    </div>
+
+    <div class="content-grid">
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <div class="eyebrow">Recent activity</div>
+                    <h2>Claims</h2>
+                </div>
+                <a href="claims">View all</a>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Claim</th>
+                            <th>Policy</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var claim in recentClaims)
+                        {
+                            <tr>
+                                <td>@claim.ClaimNumber</td>
+                                <td>@claim.PolicyNumber</td>
+                                <td><StatusPill Text="@claim.Status" /></td>
+                                <td>@claim.Amount.ToString("C0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="panel lesson-card">
+            <div class="eyebrow">Today's lesson</div>
+            <h2>Trace one request</h2>
+            <p>Open this page and follow <code>OnInitializedAsync</code> into the injected data service.</p>
+            <ol>
+                <li>Blazor component loads</li>
+                <li>Service is injected</li>
+                <li>Async method runs</li>
+                <li>API returns JSON locally</li>
+                <li>UI rerenders</li>
+            </ol>
+            <a class="button-primary" href="learn">Open learning map</a>
+        </aside>
+    </div>
+}
+
+@code {
+    private bool loading = true;
+    private string? error;
+    private DashboardSummary? summary;
+    private IReadOnlyList<Claim> recentClaims = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            summary = await DataService.GetSummaryAsync();
+            recentClaims = (await DataService.GetClaimsAsync()).Take(3).ToList();
+        }
+        catch (Exception ex)
+        {
+            error = $"Could not load dashboard: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

@@ -1,0 +1,72 @@
+@page "/policies"
+@inject IInsuranceDataService DataService
+
+<PageTitle>Policies</PageTitle>
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">Policy administration</div>
+        <h1>Policies</h1>
+        <p>This page is a practical LINQ lab.</p>
+    </div>
+
+    <label class="toggle">
+        <input type="checkbox" @bind="activeOnly" />
+        Active only
+    </label>
+</div>
+
+@if (policies is null)
+{
+    <div class="panel">Loading policies…</div>
+}
+else
+{
+    <div class="panel">
+        <div class="panel-heading">
+            <h2>@FilteredPolicies.Count() policies</h2>
+            <span class="code-hint">.Where() → .OrderBy() → render</span>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Policy</th>
+                        <th>Customer</th>
+                        <th>Type</th>
+                        <th>Premium</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var policy in FilteredPolicies)
+                    {
+                        <tr>
+                            <td>@policy.PolicyNumber</td>
+                            <td>@policy.CustomerName</td>
+                            <td>@policy.Type</td>
+                            <td>@policy.Premium.ToString("C")</td>
+                            <td><StatusPill Text="@(policy.Active ? "Active" : "Inactive")" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<Policy>? policies;
+    private bool activeOnly;
+
+    private IEnumerable<Policy> FilteredPolicies =>
+        (policies ?? [])
+            .Where(p => !activeOnly || p.Active)
+            .OrderByDescending(p => p.Premium);
+
+    protected override async Task OnInitializedAsync()
+    {
+        policies = await DataService.GetPoliciesAsync();
+    }
+}
