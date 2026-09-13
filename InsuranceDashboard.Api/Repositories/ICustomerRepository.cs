@@ -8,5 +8,6 @@ public interface ICustomerRepository
     Task<Customer?> GetByIdAsync(int id);
     Task<Customer> AddAsync(Customer customer);
     Task<Customer?> UpdateAsync(int id, Customer customer);
-    Task<bool> DeleteAsync(int id);
+    Task<Customer?> ArchiveAsync(int id);
+    Task<Customer?> RestoreAsync(int id);
 }
