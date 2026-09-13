@@ -20,4 +20,7 @@ public class Claim
     public decimal Amount { get; set; }
 
     public DateOnly LossDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    public bool IsArchived { get; set; }
+    public DateTimeOffset? ArchivedAt { get; set; }
+    public DateTimeOffset LastUpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
