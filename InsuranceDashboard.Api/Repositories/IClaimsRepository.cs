@@ -7,4 +7,6 @@ public interface IClaimsRepository
     Task<IReadOnlyList<Claim>> GetAllAsync();
     Task<Claim?> GetByIdAsync(int id);
     Task<Claim> AddAsync(Claim claim);
+    Task<Claim?> ArchiveAsync(int id);
+    Task<Claim?> RestoreAsync(int id);
 }
