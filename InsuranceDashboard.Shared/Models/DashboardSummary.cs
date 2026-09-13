@@ -4,4 +4,5 @@ public record DashboardSummary(
     int ActivePolicies,
     int OpenClaims,
     decimal WrittenPremium,
-    decimal OpenClaimExposure);
+    decimal OpenClaimExposure,
+    decimal LossRatio);
