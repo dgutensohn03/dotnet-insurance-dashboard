@@ -21,7 +21,24 @@ public sealed class ClaimsRepository : IClaimsRepository
     public Task<Claim> AddAsync(Claim claim)
     {
         claim.Id = Claims.Count == 0 ? 1 : Claims.Max(c => c.Id) + 1;
+        claim.LastUpdatedAt = DateTimeOffset.UtcNow;
         Claims.Add(claim);
         return Task.FromResult(claim);
+    }
+
+    public Task<Claim?> ArchiveAsync(int id)
+    {
+        var claim = Claims.FirstOrDefault(c => c.Id == id);
+        if (claim is null) return Task.FromResult<Claim?>(null);
+        claim.IsArchived = true; claim.ArchivedAt = DateTimeOffset.UtcNow; claim.LastUpdatedAt = DateTimeOffset.UtcNow;
+        return Task.FromResult<Claim?>(claim);
+    }
+
+    public Task<Claim?> RestoreAsync(int id)
+    {
+        var claim = Claims.FirstOrDefault(c => c.Id == id);
+        if (claim is null) return Task.FromResult<Claim?>(null);
+        claim.IsArchived = false; claim.ArchivedAt = null; claim.LastUpdatedAt = DateTimeOffset.UtcNow;
+        return Task.FromResult<Claim?>(claim);
     }
 }
