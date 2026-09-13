@@ -1,5 +1,6 @@
 using InsuranceDashboard.Client.Services;
 using InsuranceDashboard.Shared.Models;
+using Xunit;
 
 namespace InsuranceDashboard.Tests;
 
