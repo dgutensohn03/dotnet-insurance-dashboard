@@ -9,7 +9,10 @@ public interface IInsuranceDataService
     Task<IReadOnlyList<Customer>> GetCustomersAsync();
     Task<DashboardSummary> GetSummaryAsync();
     Task<Claim> AddClaimAsync(Claim claim);
+    Task<Claim> ArchiveClaimAsync(int id);
+    Task<Claim> RestoreClaimAsync(int id);
     Task<Customer> AddCustomerAsync(Customer customer);
     Task<Customer> UpdateCustomerAsync(Customer customer);
-    Task DeleteCustomerAsync(int id);
+    Task<Customer> ArchiveCustomerAsync(int id);
+    Task<Customer> RestoreCustomerAsync(int id);
 }
