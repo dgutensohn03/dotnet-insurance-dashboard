@@ -20,6 +20,7 @@ public sealed class CustomerRepository : ICustomerRepository
     public Task<Customer> AddAsync(Customer customer)
     {
         customer.Id = Customers.Count == 0 ? 1 : Customers.Max(c => c.Id) + 1;
+        customer.LastUpdatedAt = DateTimeOffset.UtcNow;
         Customers.Add(customer);
         return Task.FromResult(customer);
     }
@@ -28,15 +29,23 @@ public sealed class CustomerRepository : ICustomerRepository
     {
         var existing = Customers.FirstOrDefault(c => c.Id == id);
         if (existing is null) return Task.FromResult<Customer?>(null);
-        existing.Name = customer.Name; existing.Email = customer.Email; existing.State = customer.State;
+        existing.Name = customer.Name; existing.Email = customer.Email; existing.State = customer.State; existing.LastUpdatedAt = DateTimeOffset.UtcNow;
         return Task.FromResult<Customer?>(existing);
     }
 
-    public Task<bool> DeleteAsync(int id)
+    public Task<Customer?> ArchiveAsync(int id)
     {
         var existing = Customers.FirstOrDefault(c => c.Id == id);
-        if (existing is null) return Task.FromResult(false);
-        Customers.Remove(existing);
-        return Task.FromResult(true);
+        if (existing is null) return Task.FromResult<Customer?>(null);
+        existing.IsArchived = true; existing.ArchivedAt = DateTimeOffset.UtcNow; existing.LastUpdatedAt = DateTimeOffset.UtcNow;
+        return Task.FromResult<Customer?>(existing);
+    }
+
+    public Task<Customer?> RestoreAsync(int id)
+    {
+        var existing = Customers.FirstOrDefault(c => c.Id == id);
+        if (existing is null) return Task.FromResult<Customer?>(null);
+        existing.IsArchived = false; existing.ArchivedAt = null; existing.LastUpdatedAt = DateTimeOffset.UtcNow;
+        return Task.FromResult<Customer?>(existing);
     }
 }
