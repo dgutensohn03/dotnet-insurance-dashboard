@@ -1,104 +1,11 @@
 @page "/"
 @inject IInsuranceDataService DataService
-
-<PageTitle>Dashboard</PageTitle>
-
-<div class="page-heading">
-    <div>
-        <div class="eyebrow">Operations overview</div>
-        <h1>Insurance Dashboard</h1>
-        <p>One project for learning Blazor, C#, APIs, LINQ, dependency injection, and async data flows.</p>
-    </div>
-</div>
-
-@if (loading)
-{
-    <div class="panel">Loading dashboard…</div>
-}
-else if (error is not null)
-{
-    <div class="error-panel">@error</div>
-}
-else if (summary is not null)
-{
-    <div class="metric-grid">
-        <MetricCard Label="Active policies" Value="@summary.ActivePolicies.ToString()" Detail="LINQ Count()" />
-        <MetricCard Label="Open claims" Value="@summary.OpenClaims.ToString()" Detail="Filtered by status" />
-        <MetricCard Label="Written premium" Value="@summary.WrittenPremium.ToString("C0")" Detail="LINQ Sum()" />
-        <MetricCard Label="Open exposure" Value="@summary.OpenClaimExposure.ToString("C0")" Detail="Async service call" />
-    </div>
-
-    <div class="content-grid">
-        <section class="panel">
-            <div class="panel-heading">
-                <div>
-                    <div class="eyebrow">Recent activity</div>
-                    <h2>Claims</h2>
-                </div>
-                <a href="claims">View all</a>
-            </div>
-
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Claim</th>
-                            <th>Policy</th>
-                            <th>Status</th>
-                            <th>Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var claim in recentClaims)
-                        {
-                            <tr>
-                                <td>@claim.ClaimNumber</td>
-                                <td>@claim.PolicyNumber</td>
-                                <td><StatusPill Text="@claim.Status" /></td>
-                                <td>@claim.Amount.ToString("C0")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <aside class="panel lesson-card">
-            <div class="eyebrow">Today's lesson</div>
-            <h2>Trace one request</h2>
-            <p>Open this page and follow <code>OnInitializedAsync</code> into the injected data service.</p>
-            <ol>
-                <li>Blazor component loads</li>
-                <li>Service is injected</li>
-                <li>Async method runs</li>
-                <li>API returns JSON locally</li>
-                <li>UI rerenders</li>
-            </ol>
-            <a class="button-primary" href="learn">Open learning map</a>
-        </aside>
-    </div>
-}
-
-@code {
-    private bool loading = true;
-    private string? error;
-    private DashboardSummary? summary;
-    private IReadOnlyList<Claim> recentClaims = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            summary = await DataService.GetSummaryAsync();
-            recentClaims = (await DataService.GetClaimsAsync()).Take(3).ToList();
-        }
-        catch (Exception ex)
-        {
-            error = $"Could not load dashboard: {ex.Message}";
-        }
-        finally
-        {
-            loading = false;
-        }
-    }
-}
+<PageTitle>Operations Overview</PageTitle>
+<div class="page-heading"><div><div class="eyebrow">Portfolio performance</div><h1>Operations overview</h1><p>Monitor policy performance, claim exposure, and work that needs attention.</p></div><div class="snapshot">Updated @DateTime.Now.ToString("MMM d, h:mm tt")</div></div>
+@if(loading){<div class="panel">Loading portfolio…</div>}
+else if(error is not null){<div class="error-panel">@error</div>}
+else if(summary is not null){
+<div class="metric-grid metric-grid-five"><MetricCard Label="Active policies" Value="@summary.ActivePolicies.ToString("N0")" Detail="In-force portfolio"/><MetricCard Label="Written premium" Value="@summary.WrittenPremium.ToString("C0")" Detail="Annualized active premium"/><MetricCard Label="Open claims" Value="@summary.OpenClaims.ToString("N0")" Detail="Open + investigating"/><MetricCard Label="Claim exposure" Value="@summary.OpenClaimExposure.ToString("C0")" Detail="Outstanding exposure"/><MetricCard Label="Loss ratio" Value="@summary.LossRatio.ToString("P1")" Detail="Incurred / written premium"/></div>
+<div class="overview-grid"><section class="panel"><div class="panel-heading"><div><div class="eyebrow">Portfolio mix</div><h2>Policies by product</h2></div><a href="policies">View policies</a></div>@foreach(var item in productMix){<div class="bar-row"><span>@item.Type</span><div class="bar-track"><i style="width:@item.Percent%"></i></div><strong>@item.Count</strong></div>}</section><section class="panel"><div class="panel-heading"><div><div class="eyebrow">Claims workload</div><h2>Claims by status</h2></div><a href="claims">Open claims</a></div>@foreach(var item in statusMix){<div class="status-row"><StatusPill Text="@item.Status"/><strong>@item.Count</strong></div>}</section></div>
+<div class="content-grid"><section class="panel"><div class="panel-heading"><div><div class="eyebrow">Recent activity</div><h2>Recent claims</h2></div><a href="claims">View all</a></div><div class="table-wrap"><table><thead><tr><th>Claim</th><th>Policy</th><th>Status</th><th>Loss date</th><th>Exposure</th></tr></thead><tbody>@foreach(var c in recentClaims){<tr><td><strong>@c.ClaimNumber</strong></td><td>@c.PolicyNumber</td><td><StatusPill Text="@c.Status"/></td><td>@c.LossDate.ToString("MMM d, yyyy")</td><td>@c.Amount.ToString("C0")</td></tr>}</tbody></table></div></section><aside class="panel attention-panel"><div class="eyebrow">Needs attention</div><h2>High exposure claims</h2><p>Open claims above $25K, prioritized by exposure.</p>@foreach(var c in attentionClaims){<a class="attention-item" href="claims"><span><strong>@c.ClaimNumber</strong><small>@c.Status · @c.PolicyNumber</small></span><b>@c.Amount.ToString("C0")</b></a>}</aside></div>}
+@code{private bool loading=true;private string? error;private DashboardSummary? summary;private IReadOnlyList<Claim> recentClaims=[];private IReadOnlyList<Claim> attentionClaims=[];private List<(string Type,int Count,int Percent)> productMix=[];private List<(string Status,int Count)> statusMix=[];protected override async Task OnInitializedAsync(){try{summary=await DataService.GetSummaryAsync();var claims=await DataService.GetClaimsAsync();var policies=await DataService.GetPoliciesAsync();recentClaims=claims.OrderByDescending(c=>c.LossDate).Take(6).ToList();attentionClaims=claims.Where(c=>c.Status!="Closed"&&c.Amount>=25000).OrderByDescending(c=>c.Amount).Take(5).ToList();var max=policies.GroupBy(p=>p.Type).Max(g=>g.Count());productMix=policies.GroupBy(p=>p.Type).Select(g=>(g.Key,g.Count(),(int)Math.Round(g.Count()*100d/max))).OrderByDescending(x=>x.Item2).ToList();statusMix=claims.GroupBy(c=>c.Status).Select(g=>(g.Key,g.Count())).OrderByDescending(x=>x.Item2).ToList();}catch(Exception ex){error=$"Could not load dashboard: {ex.Message}";}finally{loading=false;}}}
