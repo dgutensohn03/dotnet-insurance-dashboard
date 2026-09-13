@@ -26,6 +26,9 @@ public sealed class ApiInsuranceDataService(HttpClient httpClient, IConfiguratio
         return await response.Content.ReadFromJsonAsync<Claim>() ?? throw new InvalidOperationException("API did not return a claim.");
     }
 
+    public Task<Claim> ArchiveClaimAsync(int id) => PostLifecycleAsync<Claim>($"api/claims/{id}/archive");
+    public Task<Claim> RestoreClaimAsync(int id) => PostLifecycleAsync<Claim>($"api/claims/{id}/restore");
+
     public async Task<Customer> AddCustomerAsync(Customer customer)
     {
         var response = await httpClient.PostAsJsonAsync($"{_apiBaseUrl}/api/customers", customer);
@@ -40,9 +43,13 @@ public sealed class ApiInsuranceDataService(HttpClient httpClient, IConfiguratio
         return await response.Content.ReadFromJsonAsync<Customer>() ?? throw new InvalidOperationException("API did not return a customer.");
     }
 
-    public async Task DeleteCustomerAsync(int id)
+    public Task<Customer> ArchiveCustomerAsync(int id) => PostLifecycleAsync<Customer>($"api/customers/{id}/archive");
+    public Task<Customer> RestoreCustomerAsync(int id) => PostLifecycleAsync<Customer>($"api/customers/{id}/restore");
+
+    private async Task<T> PostLifecycleAsync<T>(string path)
     {
-        var response = await httpClient.DeleteAsync($"{_apiBaseUrl}/api/customers/{id}");
+        var response = await httpClient.PostAsync($"{_apiBaseUrl}/{path}", null);
         response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<T>() ?? throw new InvalidOperationException("API did not return the updated record.");
     }
 }
