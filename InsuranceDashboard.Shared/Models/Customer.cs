@@ -24,4 +24,7 @@ public class Customer
 
     public int PolicyCount { get; set; }
     public decimal TotalPremium { get; set; }
+    public bool IsArchived { get; set; }
+    public DateTimeOffset? ArchivedAt { get; set; }
+    public DateTimeOffset LastUpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
