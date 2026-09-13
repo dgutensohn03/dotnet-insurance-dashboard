@@ -1,8 +1,42 @@
-# .NET Insurance Dashboard
+# InsureOps
 
-A hands-on learning project for modern **C#**, **Blazor WebAssembly**, **ASP.NET Core APIs**, **dependency injection**, **LINQ**, **async/await**, reusable components, forms, services, repositories, and API architecture.
+A production-inspired insurance operations dashboard built with **Blazor WebAssembly**, **ASP.NET Core**, and **C#/.NET 8**.
 
-The sample insurance data is fictional. This project is not affiliated with National General, Allstate, or any other insurer.
+**Live demo:** https://dgutensohn03.github.io/dotnet-insurance-dashboard/
+
+InsureOps brings policy, customer, claims, and portfolio data into one operations workspace. The project is intentionally fictional and unbranded; it is designed to demonstrate full-stack architecture, domain-aware UX decisions, maintainable component boundaries, testing, and delivery practices rather than imitate any real insurer.
+
+## What this project demonstrates
+
+- Blazor WebAssembly component architecture and state management
+- ASP.NET Core Minimal APIs and dependency injection
+- Shared typed domain models across client and server
+- LINQ-based portfolio filtering, summaries, and prioritization
+- Customer create/edit workflows with validation
+- Recoverable **archive / restore** lifecycles instead of destructive deletion
+- Claim intake, prioritization, detail review, and lifecycle management
+- Responsive modal and drawer interaction patterns
+- Service and repository boundaries that keep UI, HTTP, and persistence concerns separate
+- xUnit coverage for portfolio calculations and lifecycle behavior
+- GitHub Actions quality gate: tests must pass before Pages deployment
+- A static GitHub Pages demo mode plus a full local client/API architecture
+
+## Product areas
+
+### Overview
+Portfolio KPIs, policy mix, claims workload, recent activity, high-exposure attention items, and a simplified loss-ratio signal.
+
+### Policies
+Search and filter coverage by customer, product, and status. Summary cards surface annualized active premium, active policy count, and average monthly premium.
+
+### Claims
+Search and prioritize by status, severity, and lifecycle state. Claim intake uses a focused modal, while a detail drawer preserves table context. Claims are archived and restored rather than destructively deleted so operational history remains recoverable.
+
+### Customers
+Search customer relationships, create and edit records, inspect portfolio value, and manage Active / Archived / All lifecycle views. Archiving removes a customer from normal active workflows without erasing retained history.
+
+### Analytics
+Lightweight operational analytics built from the same typed portfolio data: product distribution, exposure by status, severity bands, average claim size, and portfolio rates.
 
 ## Architecture
 
@@ -10,135 +44,104 @@ The sample insurance data is fictional. This project is not affiliated with Nati
 Blazor WebAssembly UI
         |
         v
-ASP.NET Core API
-        |
-        v
-Services + Dependency Injection
-        |
-        v
-Repositories
-        |
-        v
-In-memory sample data
+IInsuranceDataService
+     /      \
+    /        \
+Demo mode   HTTP client
+(GitHub      |
+ Pages)      v
+        ASP.NET Core API
+               |
+               v
+          Repositories
+               |
+               v
+         Domain data
 ```
 
-The Blazor client also has **demo mode**, allowing it to run on GitHub Pages without the ASP.NET Core backend.
+The client depends on `IInsuranceDataService`, not a concrete transport. On GitHub Pages, `DemoInsuranceDataService` provides deterministic fictional data in-browser. In full-stack local development, `ApiInsuranceDataService` calls the ASP.NET Core API. This keeps hosting constraints from leaking into the UI layer.
 
-## Projects
+## Domain decision: archive instead of delete
 
-- `InsuranceDashboard.Client` — Blazor WebAssembly frontend
-- `InsuranceDashboard.Api` — ASP.NET Core Minimal API
-- `InsuranceDashboard.Shared` — shared records/models
+A basic CRUD implementation would permanently delete customers or claims. That is deliberately not the default here.
 
-## Requirements
+The application models lifecycle state with `IsArchived`, `ArchivedAt`, and `LastUpdatedAt`. Archive and restore operations are exposed through the same service and API boundaries as other domain actions. Active operational summaries exclude archived claims, while archived records remain visible through lifecycle filters and can be restored.
 
-Install the .NET 8 SDK.
+This is a small example of a larger engineering principle: **the domain should determine the interaction model, not the CRUD verbs available in a framework.**
 
-Check:
+## Testing and delivery
 
-```bash
-dotnet --version
+`InsuranceDashboard.Tests` includes xUnit coverage for:
+
+- the stable case-study claim (`CLM-10482`)
+- portfolio summary calculations
+- customer create/update/archive/restore behavior
+- claim archive/restore recovery
+
+The GitHub Actions workflow runs the test project before publishing the Blazor client. A failing test or compile error blocks deployment.
+
+## Repository structure
+
+```text
+InsuranceDashboard.Client   Blazor WebAssembly UI
+InsuranceDashboard.Api      ASP.NET Core Minimal API
+InsuranceDashboard.Shared   Shared domain models
+InsuranceDashboard.Tests    xUnit tests
 ```
 
-## Run the full stack locally
+## Run locally
 
-### 1. Start the API
+Requires the .NET 8 SDK.
 
 ```bash
 dotnet run --project InsuranceDashboard.Api
 ```
 
-The API runs at:
-
-```text
-http://localhost:5159
-```
-
-### 2. Start the Blazor client
-
-In another terminal:
+Then, in another terminal:
 
 ```bash
 dotnet run --project InsuranceDashboard.Client
 ```
 
-The development configuration is already set to use the real API.
+The development client is configured to use the API. The API defaults to `http://localhost:5159`.
 
-## GitHub Pages
+Run the tests:
 
-GitHub Pages cannot run an ASP.NET Core server. The Pages deployment uses the client's in-browser demo repository instead.
-
-After pushing this project to GitHub:
-
-1. Open the repository.
-2. Go to **Settings → Pages**.
-3. Under **Build and deployment → Source**, choose **GitHub Actions**.
-4. Push to `main`.
-5. The workflow in `.github/workflows/deploy-pages.yml` deploys the Blazor frontend.
-
-Expected URL:
-
-```text
-https://YOUR-USERNAME.github.io/dotnet-insurance-dashboard/
+```bash
+dotnet test InsuranceDashboard.Tests/InsuranceDashboard.Tests.csproj
 ```
 
-## Learning path using this dashboard
-
-1. **C# Models + LINQ**  
-   `InsuranceDashboard.Shared/Models`
-
-2. **Interfaces + Dependency Injection**  
-   `InsuranceDashboard.Api/Repositories` and `Program.cs`
-
-3. **Blazor Components**  
-   `InsuranceDashboard.Client/Components`
-
-4. **Blazor State + Events**  
-   `Pages/Claims.razor`
-
-5. **Forms + Validation**  
-   `Pages/Claims.razor`
-
-6. **ASP.NET Core APIs**  
-   `InsuranceDashboard.Api/Program.cs`
-
-7. **Async/Await**  
-   `Client/Services` and API repositories
-
-8. **Architecture**  
-   Follow the request from page → service → API → repository → response
-
-## Useful commands
-
-Build everything:
+Build the solution:
 
 ```bash
 dotnet build InsuranceDashboard.sln
 ```
 
-Publish the client:
+## GitHub Pages demo
 
-```bash
-dotnet publish InsuranceDashboard.Client -c Release
-```
+GitHub Pages cannot host an ASP.NET Core process, so the deployed site uses the browser-based demo service while retaining the same client interface and UX. Archive/create/edit changes in the Pages demo are session-only and reset on reload; local full-stack mode exercises the HTTP/API path.
 
-## Suggested first lesson
-
-Open:
+The deployment workflow:
 
 ```text
-InsuranceDashboard.Client/Pages/Claims.razor
+push to main
+→ restore/build through dotnet test
+→ publish Blazor client
+→ configure Pages base path
+→ upload artifact
+→ deploy
 ```
 
-Then trace:
+## Engineering tradeoffs
 
-```text
-Claims.razor
-→ IInsuranceDataService
-→ ApiInsuranceDataService
-→ GET /api/claims
-→ IClaimsRepository
-→ ClaimsRepository
-```
+This project deliberately keeps the persistence layer in-memory so the focus stays on application architecture and interaction design. A production implementation would typically add durable storage, authentication and authorization, stronger relationship constraints, telemetry, audit persistence, concurrency handling, DTO/entity separation, integration/E2E coverage, and domain-specific financial calculations.
 
-That single path covers Blazor, interfaces, DI, async/await, HTTP, APIs, and repositories.
+The loss-ratio-style metric is intentionally a portfolio demo signal rather than an actuarial calculation; a production implementation would align incurred losses and earned premium over the same reporting period.
+
+## Case study
+
+The companion portfolio case study walks through the same application from user interaction to Blazor state, service boundaries, HTTP, ASP.NET Core, dependency injection, repositories, testing, deployment, and production tradeoffs.
+
+---
+
+Built as a fictional portfolio project. No real customer information is used, and the project is not affiliated with National General, Allstate, or any other insurer.
