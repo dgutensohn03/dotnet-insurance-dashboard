@@ -1,46 +1,7 @@
 @page "/customers"
 @inject IInsuranceDataService DataService
-
 <PageTitle>Customers</PageTitle>
-
-<div class="page-heading">
-    <div>
-        <div class="eyebrow">Customer view</div>
-        <h1>Customers</h1>
-        <p>A simple async-loaded list using shared C# records.</p>
-    </div>
-</div>
-
-@if (customers is null)
-{
-    <div class="panel">Loading customers…</div>
-}
-else
-{
-    <div class="customer-grid">
-        @foreach (var customer in customers)
-        {
-            <article class="panel customer-card">
-                <div class="avatar">@customer.Name[..1]</div>
-                <div>
-                    <h2>@customer.Name</h2>
-                    <p>@customer.Email</p>
-                </div>
-                <div class="customer-stats">
-                    <span>@customer.State</span>
-                    <span>@customer.PolicyCount policy</span>
-                    <span>@customer.TotalPremium.ToString("C0") premium</span>
-                </div>
-            </article>
-        }
-    </div>
-}
-
-@code {
-    private IReadOnlyList<Customer>? customers;
-
-    protected override async Task OnInitializedAsync()
-    {
-        customers = await DataService.GetCustomersAsync();
-    }
-}
+<div class="page-heading"><div><div class="eyebrow">Customer operations</div><h1>Customers</h1><p>Search customer relationships, review portfolio value, and maintain customer records.</p></div><button class="button-primary" @onclick="StartCreate">+ New customer</button></div>
+<div class="toolbar"><input aria-label="Search customers" placeholder="Search name, email, or state…" @bind="search" @bind:event="oninput"/><span>@Filtered.Count() customers</span></div>
+@if(customers is null){<div class="panel">Loading customers…</div>}else{<div class="customer-workspace"><section class="panel flush"><div class="table-wrap"><table><thead><tr><th>Customer</th><th>State</th><th>Policies</th><th>Annual premium</th><th></th></tr></thead><tbody>@foreach(var c in Filtered.Take(50)){<tr class="clickable-row" @onclick="()=>Select(c)"><td><div class="person-cell"><span class="avatar">@c.Name[..1]</span><span><strong>@c.Name</strong><small>@c.Email</small></span></div></td><td>@c.State</td><td>@c.PolicyCount</td><td>@c.TotalPremium.ToString("C0")</td><td><button class="icon-button" aria-label="Edit @c.Name" @onclick:stopPropagation @onclick="()=>Edit(c)">Edit</button></td></tr>}</tbody></table></div></section><aside class="panel sticky">@if(editing is null){<div class="empty-state"><div class="eyebrow">Customer detail</div><h2>Select a customer</h2><p>Review a customer or choose New customer to create a record.</p></div>}else{<div class="panel-heading"><div><div class="eyebrow">@(editing.Id==0?"New customer":"Customer record")</div><h2>@(editing.Id==0?"Create customer":editing.Name)</h2></div>@if(editing.Id>0){<button class="danger-link" @onclick="Delete">Delete</button>}</div><EditForm Model="editing" OnValidSubmit="Save"><DataAnnotationsValidator/><ValidationSummary/><div class="stack-form"><label>Full name<InputText @bind-Value="editing.Name"/></label><label>Email<InputText @bind-Value="editing.Email"/></label><label>State<InputText @bind-Value="editing.State" maxlength="2"/></label></div><div class="form-actions"><button type="button" class="button-secondary" @onclick="Cancel">Cancel</button><button type="submit" class="button-primary" disabled="@saving">@(saving?"Saving…":"Save customer")</button></div></EditForm>}</aside></div>}
+@code{private IReadOnlyList<Customer>? customers;private Customer? editing;private string search="";private bool saving;private IEnumerable<Customer> Filtered=>customers?.Where(c=>string.IsNullOrWhiteSpace(search)||c.Name.Contains(search,StringComparison.OrdinalIgnoreCase)||c.Email.Contains(search,StringComparison.OrdinalIgnoreCase)||c.State.Contains(search,StringComparison.OrdinalIgnoreCase))??[];protected override async Task OnInitializedAsync()=>customers=await DataService.GetCustomersAsync();private void StartCreate()=>editing=new Customer();private void Select(Customer c)=>editing=Clone(c);private void Edit(Customer c)=>editing=Clone(c);private void Cancel()=>editing=null;private async Task Save(){if(editing is null)return;saving=true;try{if(editing.Id==0)await DataService.AddCustomerAsync(editing);else await DataService.UpdateCustomerAsync(editing);customers=await DataService.GetCustomersAsync();editing=null;}finally{saving=false;}}private async Task Delete(){if(editing is null||editing.Id==0)return;await DataService.DeleteCustomerAsync(editing.Id);customers=await DataService.GetCustomersAsync();editing=null;}private static Customer Clone(Customer c)=>new(c.Id,c.Name,c.Email,c.State,c.PolicyCount,c.TotalPremium);}
