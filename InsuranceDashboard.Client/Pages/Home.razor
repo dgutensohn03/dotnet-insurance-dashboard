@@ -2,7 +2,7 @@
 @inject IInsuranceDataService DataService
 <PageTitle>Operations Overview</PageTitle>
 <div class="page-heading"><div><div class="eyebrow">Portfolio performance</div><h1>Operations overview</h1><p>Monitor policy performance, claim exposure, and work that needs attention.</p></div><div class="snapshot">Updated @DateTime.Now.ToString("MMM d, h:mm tt")</div></div>
-@if(loading){<div class="panel">Loading portfolio…</div>}
+@if(loading){<div aria-label="Loading portfolio" aria-busy="true"><div class="skeleton-grid">@for(var i=0;i<5;i++){<div class="skeleton-card"></div>}</div><div class="skeleton-layout"><div class="skeleton-block"></div><div class="skeleton-block"></div></div></div>}
 else if(error is not null){<div class="error-panel">@error</div>}
 else if(summary is not null){
 <div class="metric-grid metric-grid-five"><MetricCard Label="Active policies" Value="@summary.ActivePolicies.ToString("N0")" Detail="In-force portfolio"/><MetricCard Label="Written premium" Value="@summary.WrittenPremium.ToString("C0")" Detail="Annualized active premium"/><MetricCard Label="Open claims" Value="@summary.OpenClaims.ToString("N0")" Detail="Open + investigating"/><MetricCard Label="Claim exposure" Value="@summary.OpenClaimExposure.ToString("C0")" Detail="Outstanding active exposure"/><MetricCard Label="Loss ratio signal" Value="@summary.LossRatio.ToString("P1")" Detail="Demo incurred / written premium"/></div>
