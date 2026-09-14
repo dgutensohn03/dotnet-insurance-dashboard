@@ -144,4 +144,4 @@ The companion portfolio case study walks through the same application from user 
 
 ---
 
-Built as a fictional portfolio project. No real customer information is used, and the project is not affiliated with National General, Allstate, or any other insurer.
+Built as a fictional portfolio project. No real customer information is used, and the project is not affiliated with any actual insurer.
