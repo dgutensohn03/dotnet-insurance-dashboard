@@ -6,4 +6,5 @@ public interface IPolicyRepository
 {
     Task<IReadOnlyList<Policy>> GetAllAsync();
     Task<Policy?> GetByIdAsync(int id);
+    Task<Policy?> UpdateAsync(int id, Policy policy);
 }
