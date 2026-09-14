@@ -14,9 +14,23 @@ public sealed class PolicyRepository : IPolicyRepository
         new(6, "RENTERS-6006", "Taylor Wilson", "Renters", 42.00m, true, new DateOnly(2026, 7, 1))
     ];
 
-    public Task<IReadOnlyList<Policy>> GetAllAsync() =>
-        Task.FromResult<IReadOnlyList<Policy>>(Policies);
+    public Task<IReadOnlyList<Policy>> GetAllAsync() => Task.FromResult<IReadOnlyList<Policy>>(Policies);
+    public Task<Policy?> GetByIdAsync(int id) => Task.FromResult(Policies.FirstOrDefault(p => p.Id == id));
 
-    public Task<Policy?> GetByIdAsync(int id) =>
-        Task.FromResult(Policies.FirstOrDefault(p => p.Id == id));
+    public Task<Policy?> UpdateAsync(int id, Policy policy)
+    {
+        var index = Policies.FindIndex(p => p.Id == id);
+        if (index < 0) return Task.FromResult<Policy?>(null);
+        var current = Policies[index];
+        var updated = current with
+        {
+            CustomerName = policy.CustomerName,
+            Type = policy.Type,
+            Premium = policy.Premium,
+            Active = policy.Active,
+            EffectiveDate = policy.EffectiveDate
+        };
+        Policies[index] = updated;
+        return Task.FromResult<Policy?>(updated);
+    }
 }
