@@ -13,24 +13,30 @@ test('primary routes render without application overflow', async ({ page }) => {
   }
 });
 
-test('claim detail and create dialog preserve context and keyboard behavior', async ({ page }, testInfo) => {
+test('claim detail and create dialog preserve context, lock scroll, and restore focus', async ({ page }, testInfo) => {
   await page.goto('claims');
   await ready(page);
   await page.getByText('CLM-10482', { exact: true }).click();
   await expect(page.getByLabel('Claim details')).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('claim-detail.png'), fullPage: true });
 
-  await page.getByRole('button', { name: 'New claim' }).click();
+  const trigger = page.getByRole('button', { name: 'New claim' });
+  await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Create claim' });
   await expect(dialog).toBeVisible();
   await expect(page.locator('body')).toHaveClass(/modal-open/);
+  await expect(page.locator('body')).toHaveCSS('position', 'fixed');
+  const topBefore = await page.locator('body').evaluate(el => getComputedStyle(el).top);
+  await page.mouse.wheel(0, 900);
+  await expect(page.locator('body')).toHaveCSS('top', topBefore);
   await page.screenshot({ path: testInfo.outputPath('new-claim-modal.png'), fullPage: true });
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(page.locator('body')).not.toHaveClass(/modal-open/);
+  await expect(trigger).toBeFocused();
 });
 
-test('customer create flow gives visible feedback', async ({ page }) => {
+test('customer create flow gives visible feedback', async ({ page }, testInfo) => {
   await page.goto('customers');
   await ready(page);
   await page.getByRole('button', { name: 'New customer' }).click();
@@ -41,24 +47,56 @@ test('customer create flow gives visible feedback', async ({ page }) => {
   await dialog.getByLabel('State').fill('CO');
   await dialog.getByRole('button', { name: 'Create customer' }).click();
   await expect(page.getByRole('status')).toContainText('Customer created');
+  await page.screenshot({ path: testInfo.outputPath('customer-success-feedback.png'), fullPage: true });
 });
 
-test('mobile modal is centered and background is locked', async ({ page }, testInfo) => {
+test('claim archive and restore lifecycle is recoverable', async ({ page }, testInfo) => {
+  await page.goto('claims');
+  await ready(page);
+  await page.getByRole('row').filter({ hasText: 'CLM-10482' }).click();
+  await page.getByRole('button', { name: /archive claim/i }).click();
+  const confirm = page.getByRole('alertdialog');
+  await expect(confirm).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('archive-confirmation.png'), fullPage: true });
+  await confirm.getByRole('button', { name: /archive claim/i }).click();
+  await expect(page.getByRole('status')).toContainText('archived');
+  await page.getByLabel('Filter claim lifecycle').selectOption('archived');
+  await page.getByRole('row').filter({ hasText: 'CLM-10482' }).click();
+  await page.getByRole('button', { name: /restore claim/i }).click();
+  await expect(page.getByRole('status')).toContainText('restored');
+});
+
+test('mobile navigation stays in viewport and modal locks the document', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.includes('mobile'), 'mobile-specific assertion');
   await page.goto('claims');
   await ready(page);
+  const nav = page.getByRole('navigation', { name: 'Primary navigation' });
+  const navBox = await nav.boundingBox();
+  const viewport = page.viewportSize();
+  expect(navBox && viewport).toBeTruthy();
+  if (navBox && viewport) expect(navBox.x + navBox.width).toBeLessThanOrEqual(viewport.width + 1);
+  await page.screenshot({ path: testInfo.outputPath('mobile-navigation.png'), fullPage: true });
+
   await page.getByRole('button', { name: 'New claim' }).click();
   const dialog = page.getByRole('dialog', { name: 'Create claim' });
   await expect(dialog).toBeVisible();
   await expect(page.locator('body')).toHaveCSS('position', 'fixed');
   const box = await dialog.boundingBox();
-  const viewport = page.viewportSize();
   expect(box && viewport).toBeTruthy();
   if (box && viewport) {
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+    expect(Math.abs((box.y + box.height / 2) - viewport.height / 2)).toBeLessThan(50);
   }
   await page.screenshot({ path: testInfo.outputPath('mobile-new-claim.png'), fullPage: true });
+});
+
+test('reduced-motion preference disables decorative motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('claims');
+  await ready(page);
+  const duration = await page.locator('.page-content').evaluate(el => getComputedStyle(el).animationDuration);
+  expect(['0s', '0.001s']).toContain(duration);
 });
