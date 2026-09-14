@@ -24,7 +24,7 @@ public sealed class DemoInsuranceDataService : IInsuranceDataService
         }).ToList();
         _policies[0] = new Policy(1, "POL-48392", "Jennifer Hart", "Auto", 286m, true, new DateOnly(2026,1,15));
 
-        foreach(var c in _customers){ var owned=_policies.Where(p=>p.CustomerName==c.Name).ToList(); c.PolicyCount=owned.Count; c.TotalPremium=owned.Sum(p=>p.Premium)*12m; }
+        RecalculateCustomerTotals();
 
         var statuses = new[] { "Open","Investigating","Pending","Closed","Closed" };
         _claims = Enumerable.Range(1, 210).Select(i => new Claim { Id=i, ClaimNumber=$"CLM-{10000+i}", PolicyNumber=_policies[(i*7)%_policies.Count].PolicyNumber, Status=statuses[i%statuses.Length], Amount=900m+((i*1847)%52000), LossDate=new DateOnly(2026, ((i+4)%9)+1, ((i*5)%27)+1) }).ToList();
@@ -35,11 +35,18 @@ public sealed class DemoInsuranceDataService : IInsuranceDataService
     public Task<IReadOnlyList<Claim>> GetClaimsAsync()=>Task.FromResult<IReadOnlyList<Claim>>(_claims.OrderByDescending(c=>c.LossDate).ToList());
     public Task<IReadOnlyList<Customer>> GetCustomersAsync()=>Task.FromResult<IReadOnlyList<Customer>>(_customers.OrderBy(c=>c.Name).ToList());
     public Task<DashboardSummary> GetSummaryAsync(){var premium=_policies.Where(p=>p.Active).Sum(p=>p.Premium)*12m;var activeClaims=_claims.Where(c=>!c.IsArchived).ToList();var losses=activeClaims.Sum(c=>c.Amount);return Task.FromResult(new DashboardSummary(_policies.Count(p=>p.Active),activeClaims.Count(c=>c.Status is "Open" or "Investigating"),premium,activeClaims.Where(c=>c.Status!="Closed").Sum(c=>c.Amount),premium==0?0:losses/premium));}
+
     public Task<Claim> AddClaimAsync(Claim claim){claim.Id=_claims.Count==0?1:_claims.Max(c=>c.Id)+1;claim.LastUpdatedAt=DateTimeOffset.UtcNow;_claims.Add(claim);return Task.FromResult(claim);}
+    public Task<Claim> UpdateClaimAsync(Claim claim){var existing=_claims.First(c=>c.Id==claim.Id);existing.PolicyNumber=claim.PolicyNumber;existing.Status=claim.Status;existing.Amount=claim.Amount;existing.LossDate=claim.LossDate;existing.LastUpdatedAt=DateTimeOffset.UtcNow;return Task.FromResult(existing);}
     public Task<Claim> ArchiveClaimAsync(int id){var claim=_claims.First(c=>c.Id==id);claim.IsArchived=true;claim.ArchivedAt=DateTimeOffset.UtcNow;claim.LastUpdatedAt=DateTimeOffset.UtcNow;return Task.FromResult(claim);}
     public Task<Claim> RestoreClaimAsync(int id){var claim=_claims.First(c=>c.Id==id);claim.IsArchived=false;claim.ArchivedAt=null;claim.LastUpdatedAt=DateTimeOffset.UtcNow;return Task.FromResult(claim);}
+
+    public Task<Policy> UpdatePolicyAsync(Policy policy){var index=_policies.FindIndex(p=>p.Id==policy.Id);if(index<0)throw new InvalidOperationException("Policy not found.");_policies[index]=policy;RecalculateCustomerTotals();return Task.FromResult(policy);}
+
     public Task<Customer> AddCustomerAsync(Customer customer){customer.Id=_customers.Count==0?1:_customers.Max(c=>c.Id)+1;customer.LastUpdatedAt=DateTimeOffset.UtcNow;_customers.Add(customer);return Task.FromResult(customer);}
-    public Task<Customer> UpdateCustomerAsync(Customer customer){var existing=_customers.First(c=>c.Id==customer.Id);existing.Name=customer.Name;existing.Email=customer.Email;existing.State=customer.State;existing.LastUpdatedAt=DateTimeOffset.UtcNow;return Task.FromResult(existing);}
+    public Task<Customer> UpdateCustomerAsync(Customer customer){var existing=_customers.First(c=>c.Id==customer.Id);var oldName=existing.Name;existing.Name=customer.Name;existing.Email=customer.Email;existing.State=customer.State;existing.LastUpdatedAt=DateTimeOffset.UtcNow;for(var i=0;i<_policies.Count;i++)if(_policies[i].CustomerName==oldName)_policies[i]=_policies[i] with { CustomerName=existing.Name };RecalculateCustomerTotals();return Task.FromResult(existing);}
     public Task<Customer> ArchiveCustomerAsync(int id){var customer=_customers.First(c=>c.Id==id);customer.IsArchived=true;customer.ArchivedAt=DateTimeOffset.UtcNow;customer.LastUpdatedAt=DateTimeOffset.UtcNow;return Task.FromResult(customer);}
     public Task<Customer> RestoreCustomerAsync(int id){var customer=_customers.First(c=>c.Id==id);customer.IsArchived=false;customer.ArchivedAt=null;customer.LastUpdatedAt=DateTimeOffset.UtcNow;return Task.FromResult(customer);}
+
+    private void RecalculateCustomerTotals(){foreach(var c in _customers){var owned=_policies.Where(p=>p.CustomerName==c.Name).ToList();c.PolicyCount=owned.Count;c.TotalPremium=owned.Sum(p=>p.Premium)*12m;}}
 }
