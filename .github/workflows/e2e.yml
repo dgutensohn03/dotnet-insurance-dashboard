@@ -1,0 +1,38 @@
+name: Browser QA
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - run: npm install --package-lock-only
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Run browser QA against deployed product
+        run: npm test
+        env:
+          BASE_URL: https://dgutensohn03.github.io/dotnet-insurance-dashboard/
+      - name: Upload browser QA report and captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: insureops-browser-qa
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 30
