@@ -1,6 +1,8 @@
 name: Browser QA
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
   workflow_dispatch:
 
@@ -18,8 +20,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
       - run: npm install --package-lock-only
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
