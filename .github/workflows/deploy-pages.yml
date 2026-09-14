@@ -65,7 +65,7 @@ jobs:
         run: |
           npm install
           npx playwright install --with-deps chromium webkit
-      - name: Run end-to-end tests
+      - name: Run end-to-end tests and capture product states
         working-directory: e2e
         env:
           BASE_URL: https://dgutensohn03.github.io/dotnet-insurance-dashboard/
@@ -77,3 +77,11 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report
           retention-days: 14
+      - name: Upload product captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: insureops-product-captures
+          path: e2e/test-results/**/*.png
+          if-no-files-found: ignore
+          retention-days: 30
