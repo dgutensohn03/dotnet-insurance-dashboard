@@ -12,11 +12,8 @@ public sealed class ClaimsRepository : IClaimsRepository
         new() { Id = 4, ClaimNumber = "CLM-9004", PolicyNumber = "AUTO-5005", Status = "Open", Amount = 7350m, LossDate = new DateOnly(2026, 9, 2) }
     ];
 
-    public Task<IReadOnlyList<Claim>> GetAllAsync() =>
-        Task.FromResult<IReadOnlyList<Claim>>(Claims.OrderByDescending(c => c.LossDate).ToList());
-
-    public Task<Claim?> GetByIdAsync(int id) =>
-        Task.FromResult(Claims.FirstOrDefault(c => c.Id == id));
+    public Task<IReadOnlyList<Claim>> GetAllAsync() => Task.FromResult<IReadOnlyList<Claim>>(Claims.OrderByDescending(c => c.LossDate).ToList());
+    public Task<Claim?> GetByIdAsync(int id) => Task.FromResult(Claims.FirstOrDefault(c => c.Id == id));
 
     public Task<Claim> AddAsync(Claim claim)
     {
@@ -24,6 +21,18 @@ public sealed class ClaimsRepository : IClaimsRepository
         claim.LastUpdatedAt = DateTimeOffset.UtcNow;
         Claims.Add(claim);
         return Task.FromResult(claim);
+    }
+
+    public Task<Claim?> UpdateAsync(int id, Claim claim)
+    {
+        var existing = Claims.FirstOrDefault(c => c.Id == id);
+        if (existing is null) return Task.FromResult<Claim?>(null);
+        existing.PolicyNumber = claim.PolicyNumber;
+        existing.Status = claim.Status;
+        existing.Amount = claim.Amount;
+        existing.LossDate = claim.LossDate;
+        existing.LastUpdatedAt = DateTimeOffset.UtcNow;
+        return Task.FromResult<Claim?>(existing);
     }
 
     public Task<Claim?> ArchiveAsync(int id)
