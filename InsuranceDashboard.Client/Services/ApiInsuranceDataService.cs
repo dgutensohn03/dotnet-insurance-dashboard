@@ -26,8 +26,22 @@ public sealed class ApiInsuranceDataService(HttpClient httpClient, IConfiguratio
         return await response.Content.ReadFromJsonAsync<Claim>() ?? throw new InvalidOperationException("API did not return a claim.");
     }
 
+    public async Task<Claim> UpdateClaimAsync(Claim claim)
+    {
+        var response = await httpClient.PutAsJsonAsync($"{_apiBaseUrl}/api/claims/{claim.Id}", claim);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Claim>() ?? throw new InvalidOperationException("API did not return a claim.");
+    }
+
     public Task<Claim> ArchiveClaimAsync(int id) => PostLifecycleAsync<Claim>($"api/claims/{id}/archive");
     public Task<Claim> RestoreClaimAsync(int id) => PostLifecycleAsync<Claim>($"api/claims/{id}/restore");
+
+    public async Task<Policy> UpdatePolicyAsync(Policy policy)
+    {
+        var response = await httpClient.PutAsJsonAsync($"{_apiBaseUrl}/api/policies/{policy.Id}", policy);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Policy>() ?? throw new InvalidOperationException("API did not return a policy.");
+    }
 
     public async Task<Customer> AddCustomerAsync(Customer customer)
     {
